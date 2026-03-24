@@ -24,7 +24,7 @@ python-dotenv==1.0.1
 # AI / Language Models
 # -------------------------
 openai==1.14.3
-groq   # Groq client (latest available)
+groq
 
 # -------------------------
 # Data & Analytics
