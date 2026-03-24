@@ -39,6 +39,9 @@ urllib3==2.2.1
 charset-normalizer==3.3.2
 python-dateutil==2.9.0
 
+
+chardet==5.2.0
+
 # -------------------------
 # PDF Generation
 # -------------------------
