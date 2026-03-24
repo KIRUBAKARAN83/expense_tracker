@@ -1,25 +1,41 @@
+# -------------------------
+# Core Framework
+# -------------------------
 Django==4.2.7
 
+# -------------------------
 # Deployment
+# -------------------------
 gunicorn==21.2.0
 whitenoise==6.6.0
 
-# Database
+# -------------------------
+# Database (Supabase PostgreSQL)
+# -------------------------
 dj-database-url==2.1.0
 psycopg2-binary==2.9.9
 
+# -------------------------
 # Environment variables
+# -------------------------
 python-dotenv==1.0.1
 
-# AI (voice + chatbot)
+# -------------------------
+# AI / Language Models
+# -------------------------
 openai==1.14.3
-groq
+groq   # Groq client (latest available)
 
-
-# Data processing & charts
+# -------------------------
+# Data & Analytics
+# -------------------------
+numpy==1.26.4
 pandas==2.2.1
+scikit-learn==1.4.1.post1
 matplotlib==3.8.2
 Pillow==10.2.0
 
-# Optional but useful (safe add)
-numpy==1.26.4
+# -------------------------
+# PDF Generation
+# -------------------------
+reportlab==4.1.0
