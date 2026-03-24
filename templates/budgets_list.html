@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Budgets{% endblock %}
+
+{% block content %}
+<h3 class="fw-bold mb-4 animate-title">📊 Your Budgets</h3>
+
+<a href="{% url 'create_budget' %}" class="btn btn-gradient mb-3 add-btn">
+  ➕ Add Budget
+</a>
+
+{% if budgets %}
+<div class="card budget-card shadow border-0">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0 animate-table">
+      <thead class="table-header">
+        <tr>
+          <th>Category</th>
+          <th>Limit (₹)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in budgets %}
+        <tr class="table-row">
+          <td data-label="Category">{{ b.category }}</td>
+          <td data-label="Limit">₹{{ b.limit }}</td>
+          <td data-label="Actions">
+            <!-- Delete button -->
+            <a href="{% url 'delete_budget' b.id %}" 
+               class="btn btn-sm btn-danger"
+               onclick="return confirm('Are you sure you want to delete this budget?');">
+              🗑 Delete
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<p class="text-muted animate-fade">No budgets created yet.</p>
+{% endif %}
+
+<style>
+/* ================= THEME (Premium Teal + Royal Indigo) ================= */
+:root{
+  --income-start: #00B894;   /* Premium Teal */
+  --income-end:   #00D2FF;   /* Cyan highlight */
+
+  --savings-start:#6F4FF2;   /* Royal Indigo */
+  --savings-end:  #A78BFA;   /* Lavender */
+
+  --expense-start:#FF6B6B;   /* Coral (danger) */
+  --expense-end:  #FF8A65;
+
+  --gold-1:       #FFD166;   /* Gold accent */
+
+  --bg:           #F7FBFC;
+  --card-glass:   rgba(255,255,255,.65);
+  --muted:        rgba(15,23,36,.6);
+  --card-border:  rgba(255,255,255,.22);
+  --text-strong:  #0F1724;
+  --shadow-1:     rgba(11,22,40,.06);
+  --accent:       #3498db;
+}
+
+/* ================= PAGE TITLE ================= */
+.animate-title {
+  color: var(--savings-start);
+  font-weight: 800;
+  letter-spacing: .2px;
+  animation: slideIn 0.8s cubic-bezier(.2,.9,.2,1);
+  transform-origin: left center;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-30px) rotate(-1deg); }
+  to { opacity: 1; transform: translateX(0) rotate(0); }
+}
+
+/* ================= ADD BUTTON ================= */
+.btn-gradient {
+  display:inline-flex;
+  align-items:center;
+  gap:.5rem;
+  background: linear-gradient(135deg, var(--income-start), var(--income-end));
+  color: #fff;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: .5rem .9rem;
+  border: none;
+  box-shadow: 0 12px 30px rgba(0,210,255,.08);
+  transition: transform .28s cubic-bezier(.2,.9,.2,1), box-shadow .28s ease, filter .18s ease;
+}
+.btn-gradient:hover{
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 22px 50px rgba(0,210,255,.14);
+  filter: brightness(1.03);
+}
+
+/* ================= BUDGET CARD ================= */
+.budget-card {
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #fbfdff);
+  border: 1px solid rgba(11,22,40,0.04);
+  box-shadow: 0 10px 30px var(--shadow-1);
+  transition: transform .36s cubic-bezier(.2,.9,.2,1), box-shadow .36s ease;
+  overflow: hidden;
+}
+.budget-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 28px 60px rgba(11,22,40,.10);
+}
+
+/* ================= TABLE HEADER ================= */
+.table-header {
+  background: linear-gradient(90deg, var(--savings-start), var(--savings-end));
+  color: #fff;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.6px;
+  border-bottom: none;
+}
+.table-header th {
+  padding: .9rem 1.25rem;
+}
+
+/* ================= TABLE ROWS ================= */
+.animate-table { animation: fadeUp 0.9s ease both; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+}
+.table tbody tr {
+  background: linear-gradient(180deg,#ffffff,#fbfdff);
+  transition: transform .22s ease, box-shadow .22s ease, background .22s ease;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(11,22,40,.03);
+}
+.table tbody tr td {
+  padding: .9rem 1.25rem;
+  vertical-align: middle;
+  border: none;
+}
+.table-row:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(11,22,40,.06);
+  background: linear-gradient(90deg, rgba(0,184,148,0.03), rgba(111,79,242,0.02));
+}
+
+/* alternate subtle row striping */
+.table tbody tr:nth-child(odd) { background: linear-gradient(180deg,#ffffff,#fcfdff); }
+
+/* ================= EMPTY STATE ================= */
+.animate-fade {
+  animation: fadeIn 0.9s ease both;
+  font-style: italic;
+  color: var(--muted);
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 768px) {
+  .table thead { display: none; }
+  .table tbody tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(11,22,40,0.04);
+    border-radius: 10px;
+    padding: .75rem;
+    background: linear-gradient(180deg,#ffffff,#fbfdff);
+  }
+  .table tbody td {
+    display: flex;
+    justify-content: space-between;
+    padding: .5rem 0;
+    border-bottom: none;
+  }
+  .table tbody td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--savings-start);
+    margin-right: 8px;
+  }
+  .btn-gradient { width: 100%; justify-content:center; }
+}
+
+/* ================= UTILITIES ================= */
+.fw-bold { font-weight: 800; }
+.text-muted { color: rgba(15,23,36,.45); }
+</style>
+{% endblock %}

@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+
+{% block content %}
+
+<style>
+/* ================= THEME (Dark premium with blinking neon accents) ================= */
+:root{
+  --bg-dark: #071021;
+  --panel: rgba(255,255,255,0.03);
+  --glass: rgba(255,255,255,0.04);
+  --muted: rgba(255,255,255,0.82);
+  --muted-2: rgba(255,255,255,0.56);
+  --accent-1: #4B3BFF;   /* indigo */
+  --accent-2: #00D2FF;   /* cyan */
+  --accent-3: #FFD166;   /* gold */
+  --danger: #FF6B6B;
+  --radius: 18px;
+  --card-pad: 1.25rem;
+}
+
+/* ================= PAGE LAYOUT ================= */
+body {
+  background:
+    radial-gradient(800px 400px at 10% 10%, rgba(75,59,255,0.06), transparent 8%),
+    radial-gradient(700px 350px at 90% 85%, rgba(0,210,255,0.03), transparent 8%),
+    var(--bg-dark);
+  color: var(--muted);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* center column spacing */
+.row.justify-content-center { padding-top: 4.5rem; padding-bottom: 4.5rem; }
+
+/* ================= PAGE ANIMATION ================= */
+.page-enter {
+  opacity: 0;
+  transform: translateY(18px) scale(.995);
+  animation: pageFade 0.7s cubic-bezier(.2,.9,.2,1) forwards;
+}
+@keyframes pageFade {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ================= AUTH CARD (glass + neon rim) ================= */
+.auth-card {
+  position: relative;
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 30px 80px rgba(2,6,23,0.7), inset 0 1px 0 rgba(255,255,255,0.02);
+  overflow: visible;
+  transition: transform .36s cubic-bezier(.2,.9,.2,1), box-shadow .36s ease;
+}
+
+/* hover lift */
+.auth-card:hover { transform: translateY(-10px); box-shadow: 0 48px 120px rgba(2,6,23,0.75); }
+
+/* decorative blinking lights container (UI only) */
+.auth-card .blink-lights {
+  position: absolute;
+  inset: -12px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* light node base */
+.auth-card .blink-lights .light {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  box-shadow: 0 6px 18px rgba(0,210,255,0.18);
+  opacity: 0;
+  transform: scale(.6);
+  filter: blur(.6px);
+  animation: blink 2.4s infinite ease-in-out;
+}
+
+/* positions and staggered delays */
+.auth-card .blink-lights .light.l1 { left: 6%; top: -6%; animation-delay: 0s; background: var(--accent-1); }
+.auth-card .blink-lights .light.l2 { left: 28%; top: -10%; animation-delay: .14s; background: var(--accent-2); }
+.auth-card .blink-lights .light.l3 { left: 52%; top: -8%; animation-delay: .28s; background: var(--accent-3); }
+.auth-card .blink-lights .light.l4 { left: 76%; top: -6%; animation-delay: .42s; background: var(--accent-1); }
+.auth-card .blink-lights .light.l5 { right: -6%; top: 18%; animation-delay: .56s; background: var(--accent-2); }
+.auth-card .blink-lights .light.l6 { right: -6%; bottom: 18%; animation-delay: .70s; background: var(--accent-3); }
+.auth-card .blink-lights .light.l7 { left: 76%; bottom: -6%; animation-delay: .84s; background: var(--accent-1); }
+.auth-card .blink-lights .light.l8 { left: 52%; bottom: -8%; animation-delay: .98s; background: var(--accent-2); }
+.auth-card .blink-lights .light.l9 { left: 28%; bottom: -10%; animation-delay: 1.12s; background: var(--accent-3); }
+.auth-card .blink-lights .light.l10{ left: 6%; bottom: -6%; animation-delay: 1.26s; background: var(--accent-1); }
+
+/* blinking keyframe: fade + scale for soft neon blink */
+@keyframes blink {
+  0%   { opacity: 0; transform: scale(.6); filter: blur(1px); box-shadow: 0 6px 18px rgba(0,0,0,0); }
+  10%  { opacity: .95; transform: scale(1.15); filter: blur(0); box-shadow: 0 18px 48px rgba(0,0,0,0.12); }
+  30%  { opacity: .6; transform: scale(.95); }
+  60%  { opacity: 0.12; transform: scale(.8); }
+  100% { opacity: 0; transform: scale(.6); }
+}
+
+/* ambient glow behind card */
+.auth-card::before{
+  content: "";
+  position: absolute;
+  inset: -40px;
+  border-radius: calc(var(--radius) + 40px);
+  background: radial-gradient(400px 200px at 50% 0%, rgba(75,59,255,0.04), transparent 20%);
+  z-index: -1;
+  filter: blur(18px);
+  opacity: .9;
+  pointer-events: none;
+}
+
+/* ================= SHAKE ON ERROR (keeps original behavior) ================= */
+.shake {
+  animation: shake 0.4s ease;
+}
+@keyframes shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+  100% { transform: translateX(0); }
+}
+
+/* ================= FORM ELEMENTS ================= */
+.auth-card input,
+.auth-card select,
+.auth-card textarea,
+.auth-card .form-control {
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.02);
+  color: #fff;
+  transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease, background .18s ease;
+  width: 100%;
+  font-size: .95rem;
+  z-index: 2;
+}
+
+/* focus ring with neon accent */
+.auth-card input:focus,
+.auth-card select:focus,
+.auth-card textarea:focus,
+.auth-card .form-control:focus {
+  outline: none;
+  border-color: rgba(0,210,255,0.28);
+  box-shadow: 0 12px 36px rgba(0,210,255,0.06), 0 0 0 6px rgba(75,59,255,0.06);
+  background: rgba(255,255,255,0.03);
+  transform: translateY(-2px);
+}
+
+/* placeholders and labels */
+.auth-card ::placeholder { color: rgba(255,255,255,0.45); }
+.form-label { color: var(--muted-2); font-weight:700; font-size:.9rem; z-index: 2; }
+
+/* input reveal stagger (JS toggles .visible) */
+.auth-card .form-control { opacity: 0; transform: translateY(8px); }
+.auth-card .form-control.visible { opacity: 1; transform: translateY(0); transition: opacity .45s ease, transform .45s cubic-bezier(.2,.9,.2,1); }
+
+/* ================= HELP & ERROR TEXT (keeps original colors) ================= */
+.help-text {
+  font-size: 0.85rem;
+  color: var(--muted-2);
+  margin-top: 4px;
+  z-index: 2;
+}
+.error-text {
+  font-size: 0.85rem;
+  color: var(--danger);
+  margin-top: 4px;
+  z-index: 2;
+}
+
+/* ================= PASSWORD TOGGLE (fixed behavior) ================= */
+.password-wrapper { position: relative; }
+.toggle-password {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--muted-2);
+  z-index: 3;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ================= BUTTONS (keeps original content but premium look) ================= */
+.btn-register {
+  background: linear-gradient(135deg, var(--accent-2), var(--accent-1));
+  border: none;
+  border-radius: 12px;
+  padding: 10px;
+  color: #06121a;
+  font-weight: 800;
+  box-shadow: 0 14px 36px rgba(0,210,255,0.10);
+  transition: transform .22s cubic-bezier(.2,.9,.2,1), box-shadow .22s ease, filter .12s ease;
+}
+.btn-register:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 30px 70px rgba(0,210,255,0.16);
+  filter: brightness(1.03);
+}
+
+/* ================= SUCCESS STATE & Loading (keeps original behavior) ================= */
+.form-success { animation: successFade 0.6s ease forwards; }
+@keyframes successFade { to { opacity: 0.95; transform: scale(0.995); } }
+
+.btn-loading { pointer-events: none; opacity: 0.85; }
+.btn-loading::after {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 8px;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ================= SMALL SCREENS ================= */
+@media (max-width: 768px) {
+  .col-md-5 { max-width: 92%; }
+  .auth-card { border-radius: 12px; }
+  .btn-register { width: 100%; }
+}
+
+/* ================= ACCESSIBILITY ================= */
+button:focus, a:focus, input:focus { outline: none; box-shadow: 0 0 0 6px rgba(75,59,255,0.06); border-radius: 12px; }
+</style>
+
+<div class="row justify-content-center page-enter">
+  <div class="col-md-5">
+
+    <!-- SHAKE triggers only when form has errors; blinking lights are UI-only and do not change content -->
+    <div class="card shadow-lg auth-card {% if form.errors %}shake{% endif %}">
+
+      <!-- blinking lights UI only (no content change) -->
+      <div class="blink-lights" aria-hidden="true">
+        <div class="light l1"></div>
+        <div class="light l2"></div>
+        <div class="light l3"></div>
+        <div class="light l4"></div>
+        <div class="light l5"></div>
+        <div class="light l6"></div>
+        <div class="light l7"></div>
+        <div class="light l8"></div>
+        <div class="light l9"></div>
+        <div class="light l10"></div>
+      </div>
+
+      <div class="card-body p-4">
+
+        <h4 class="fw-bold text-center mb-1" style="color:#fff">📝 Create Account</h4>
+        <p class="text-center" style="color:var(--muted-2); margin-bottom:1rem;">
+          Start tracking your finances intelligently
+        </p>
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% for field in form %}
+            {# Wrap each field; for password fields include a toggle that references the input's id #}
+            <div class="mb-3 {% if 'password' in field.name %}password-wrapper{% endif %}">
+              <label class="form-label fw-semibold" style="color:var(--muted-2);">
+                {{ field.label }}
+              </label>
+
+              {# Render the field normally; ensure the input has an id (Django does by default) #}
+              {{ field }}
+
+              {% if field.help_text %}
+                <div class="help-text">
+                  {{ field.help_text|safe }}
+                </div>
+              {% endif %}
+
+              {% for error in field.errors %}
+                <div class="error-text">
+                  {{ error }}
+                </div>
+              {% endfor %}
+
+              {# If this is a password field, render a toggle that targets the field's id_for_label #}
+              {% if 'password' in field.name %}
+                <span class="toggle-password"
+                      role="button"
+                      tabindex="0"
+                      aria-label="Toggle password visibility"
+                      onclick="togglePassword('{{ field.id_for_label }}', this)"
+                      onkeydown="if(event.key==='Enter' || event.key===' ') { event.preventDefault(); togglePassword('{{ field.id_for_label }}', this); }">
+                  👁 Show
+                </span>
+              {% endif %}
+            </div>
+          {% endfor %}
+
+          <button type="submit" class="btn btn-register text-white w-100 mt-3">
+            🚀 Create Account
+          </button>
+        </form>
+
+        <p class="mt-4 text-center" style="color:var(--muted-2);">
+          Already have an account?
+          <a href="/accounts/login/" style="color:var(--accent-2); font-weight:700; text-decoration:none;">Login</a>
+        </p>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------- PASSWORD TOGGLE (fixed) ----------
+   The previous implementation relied on previousElementSibling which can fail depending on how Django renders fields.
+   This version targets the input by its id (field.id_for_label) which is passed into the toggle span.
+   It also supports keyboard activation (Enter/Space) and updates the toggle text and aria attributes.
+*/
+
+function togglePassword(inputId, toggleEl) {
+  if (!inputId) return;
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  // Determine current state and toggle
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+
+  // Update toggle label and aria-pressed
+  if (isPassword) {
+    toggleEl.textContent = '🙈 Hide';
+    toggleEl.setAttribute('aria-pressed', 'true');
+  } else {
+    toggleEl.textContent = '👁 Show';
+    toggleEl.setAttribute('aria-pressed', 'false');
+  }
+
+  // Keep focus on the input after toggling for better UX
+  input.focus();
+
+  // Move cursor to end for text inputs (works in most browsers)
+  try {
+    const len = input.value.length;
+    input.setSelectionRange(len, len);
+  } catch (e) {
+    // ignore if not supported
+  }
+}
+
+/* ---------- SUCCESS ANIMATION (keeps original behavior) ---------- */
+document.querySelectorAll("form").forEach(form => {
+  form.addEventListener("submit", function () {
+    const card = form.closest(".card");
+    const btn = form.querySelector("button[type='submit']");
+
+    if (btn) btn.classList.add("btn-loading");
+    if (card) card.classList.add("form-success");
+  });
+});
+
+/* ---------- Input reveal stagger (UI-only) ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  const inputs = Array.from(document.querySelectorAll('.auth-card .form-control, .auth-card input, .auth-card select, .auth-card textarea'));
+  inputs.forEach((el, i) => {
+    setTimeout(() => el.classList.add('visible'), 80 * i);
+  });
+
+  /* focus first visible input for keyboard users */
+  const first = inputs.find(i => i.offsetParent !== null);
+  if (first) first.focus();
+});
+</script>
+
+{% endblock %}

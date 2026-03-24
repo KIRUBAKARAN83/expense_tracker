@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+
+<style>
+/* ================= THEME (Dark premium with blinking neon lights) ================= */
+:root{
+  --bg-dark: #071021;
+  --panel: rgba(255,255,255,0.03);
+  --glass: rgba(255,255,255,0.04);
+  --muted: rgba(255,255,255,0.78);
+  --muted-2: rgba(255,255,255,0.56);
+  --accent-1: #4B3BFF;   /* indigo */
+  --accent-2: #00D2FF;   /* cyan */
+  --accent-3: #FFD166;   /* gold */
+  --danger: #FF6B6B;
+  --radius: 18px;
+}
+
+/* ================= PAGE LAYOUT ================= */
+body {
+  background:
+    radial-gradient(800px 400px at 10% 10%, rgba(75,59,255,0.06), transparent 8%),
+    radial-gradient(700px 350px at 90% 85%, rgba(0,210,255,0.03), transparent 8%),
+    var(--bg-dark);
+  color: var(--muted);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* center column */
+.row.justify-content-center { padding-top: 4.5rem; padding-bottom: 4.5rem; }
+
+/* ================= AUTH CARD ================= */
+.auth-card {
+  position: relative;
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 30px 80px rgba(2,6,23,0.7), inset 0 1px 0 rgba(255,255,255,0.02);
+  overflow: visible;
+  transition: transform .36s cubic-bezier(.2,.9,.2,1), box-shadow .36s ease;
+}
+
+/* subtle lift on hover */
+.auth-card:hover { transform: translateY(-10px); box-shadow: 0 48px 120px rgba(2,6,23,0.75); }
+
+/* decorative blinking lights container (pure UI, no content changes) */
+.auth-card .blink-lights {
+  position: absolute;
+  inset: -12px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* create multiple light nodes using pseudo elements via CSS variables */
+.auth-card .blink-lights .light {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  box-shadow: 0 6px 18px rgba(0,210,255,0.18);
+  opacity: 0;
+  transform: scale(.6);
+  filter: blur(.6px);
+  animation: blink 2.2s infinite ease-in-out;
+}
+
+/* place lights around the card (unique positions) */
+.auth-card .blink-lights .light.l1 { left: 6%; top: -6%; animation-delay: 0s; background: var(--accent-1); }
+.auth-card .blink-lights .light.l2 { left: 28%; top: -10%; animation-delay: .18s; background: var(--accent-2); }
+.auth-card .blink-lights .light.l3 { left: 52%; top: -8%; animation-delay: .36s; background: var(--accent-3); }
+.auth-card .blink-lights .light.l4 { left: 76%; top: -6%; animation-delay: .54s; background: var(--accent-1); }
+.auth-card .blink-lights .light.l5 { right: -6%; top: 18%; animation-delay: .72s; background: var(--accent-2); }
+.auth-card .blink-lights .light.l6 { right: -6%; bottom: 18%; animation-delay: .9s; background: var(--accent-3); }
+.auth-card .blink-lights .light.l7 { left: 76%; bottom: -6%; animation-delay: 1.08s; background: var(--accent-1); }
+.auth-card .blink-lights .light.l8 { left: 52%; bottom: -8%; animation-delay: 1.26s; background: var(--accent-2); }
+.auth-card .blink-lights .light.l9 { left: 28%; bottom: -10%; animation-delay: 1.44s; background: var(--accent-3); }
+.auth-card .blink-lights .light.l10{ left: 6%; bottom: -6%; animation-delay: 1.62s; background: var(--accent-1); }
+
+/* blinking keyframe: fade + scale for soft neon blink */
+@keyframes blink {
+  0%   { opacity: 0; transform: scale(.6); filter: blur(1px); box-shadow: 0 6px 18px rgba(0,0,0,0); }
+  10%  { opacity: .95; transform: scale(1.15); filter: blur(0); box-shadow: 0 18px 48px rgba(0,0,0,0.12); }
+  30%  { opacity: .6; transform: scale(.95); }
+  60%  { opacity: 0.12; transform: scale(.8); }
+  100% { opacity: 0; transform: scale(.6); }
+}
+
+/* optional slow ambient glow behind card */
+.auth-card::before{
+  content: "";
+  position: absolute;
+  inset: -40px;
+  border-radius: calc(var(--radius) + 40px);
+  background: radial-gradient(400px 200px at 50% 0%, rgba(75,59,255,0.04), transparent 20%);
+  z-index: -1;
+  filter: blur(18px);
+  opacity: .9;
+  pointer-events: none;
+}
+
+/* ================= HEADER ================= */
+.auth-title {
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: .3px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.6rem;
+  font-size:1.25rem;
+  z-index: 2;
+}
+.auth-subtitle {
+  font-size: .95rem;
+  color: var(--muted-2);
+  text-align:center;
+  margin-bottom: 1.25rem;
+  z-index: 2;
+}
+
+/* animated icon (keeps content same) */
+.auth-icon {
+  display:inline-grid;
+  place-items:center;
+  width:44px;height:44px;border-radius:10px;
+  background: linear-gradient(135deg,var(--accent-1),var(--accent-2));
+  box-shadow: 0 12px 36px rgba(75,59,255,0.14);
+  transform-origin:center;
+  animation: iconFloat 3s ease-in-out infinite;
+  z-index: 2;
+}
+@keyframes iconFloat {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(2deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+/* ================= FORM ELEMENTS ================= */
+.auth-card input,
+.auth-card select,
+.auth-card textarea,
+.auth-card .form-control {
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.02);
+  color: #d2caca;
+  transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease, background .18s ease;
+  width: 100%;
+  font-size: .95rem;
+  z-index: 2;
+}
+
+/* focus ring with neon accent */
+.auth-card input:focus,
+.auth-card select:focus,
+.auth-card textarea:focus,
+.auth-card .form-control:focus {
+  outline: none;
+  border-color: rgba(0,210,255,0.28);
+  box-shadow: 0 12px 36px rgba(0,210,255,0.06), 0 0 0 6px rgba(75,59,255,0.06);
+  background: rgba(255,255,255,0.03);
+  transform: translateY(-2px);
+}
+
+/* placeholders and labels */
+.auth-card ::placeholder { color: rgba(245, 241, 241, 0.45); }
+.form-label { color: var(--muted-2); font-weight:700; font-size:.9rem; z-index: 2; }
+
+/* input reveal stagger (pure CSS class toggled by JS below) */
+.auth-card .form-control { opacity: 0; transform: translateY(8px); }
+.auth-card .form-control.visible { opacity: 1; transform: translateY(0); transition: opacity .45s ease, transform .45s cubic-bezier(.2,.9,.2,1); }
+
+/* ================= BUTTONS ================= */
+.btn-login {
+  background: linear-gradient(135deg, var(--accent-2), var(--accent-1));
+  border: none;
+  border-radius: 12px;
+  padding: 12px 22px;
+  color: #06121a;
+  font-weight: 800;
+  letter-spacing: .3px;
+  box-shadow: 0 14px 36px rgba(0,210,255,0.10);
+  transition: transform .22s cubic-bezier(.2,.9,.2,1), box-shadow .22s ease, filter .12s ease;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.6rem;
+  z-index: 2;
+}
+.btn-login:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 30px 70px rgba(0,210,255,0.16);
+  filter: brightness(1.03);
+}
+
+/* ghost links */
+.btn-ghost {
+  background: transparent;
+  color: var(--muted-2);
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 10px 18px;
+  border-radius: 10px;
+  transition: background .18s ease, transform .18s ease;
+  z-index: 2;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.02); transform: translateY(-3px); }
+
+/* ================= LINKS & FOOTER ================= */
+.auth-link a { color: var(--accent-2); font-weight:700; text-decoration:none; z-index: 2; }
+.auth-link a:hover { text-decoration:underline; color: var(--accent-1); }
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 768px) {
+  .col-md-5 { max-width: 92%; }
+  .auth-card { border-radius: 12px; }
+  .btn-login { width: 100%; }
+}
+
+/* ================= ACCESSIBILITY ================= */
+button:focus, a:focus, input:focus { outline: none; box-shadow: 0 0 0 6px rgba(75,59,255,0.06); border-radius: 12px; }
+</style>
+
+<div class="row justify-content-center page-enter">
+  <div class="col-md-5">
+
+    <div class="card shadow-lg auth-card">
+      <!-- blinking lights UI only (no content change) -->
+      <div class="blink-lights" aria-hidden="true">
+        <div class="light l1"></div>
+        <div class="light l2"></div>
+        <div class="light l3"></div>
+        <div class="light l4"></div>
+        <div class="light l5"></div>
+        <div class="light l6"></div>
+        <div class="light l7"></div>
+        <div class="light l8"></div>
+        <div class="light l9"></div>
+        <div class="light l10"></div>
+      </div>
+
+      <div class="card-body p-4">
+
+        <div class="d-flex justify-content-center mb-3">
+          <div class="auth-icon" aria-hidden="true">
+            <!-- keep content identical: premium shield symbol -->
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 2l7 4v6c0 5-3.5 9.5-7 10-3.5-.5-7-5-7-10V6l7-4z" fill="rgba(255,255,255,0.95)"/>
+              <path d="M9 11l2 2 4-4" stroke="rgba(0,0,0,0.06)" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <h4 class="auth-title mb-1">🔐 Welcome Back</h4>
+        <p class="auth-subtitle mb-4">
+          Sign in to continue managing your finances
+        </p>
+
+        <form method="post" novalidate id="loginForm">
+          {% csrf_token %}
+          {{ form.as_p }}
+
+          <button type="submit" class="btn btn-login text-white w-100 mt-2" id="loginBtn" aria-label="Login">
+            🚀 Login
+          </button>
+        </form>
+
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <a class="auth-link" href="/accounts/password_reset/">Forgot Password?</a>
+          <a class="auth-link" href="/accounts/register/">Create an Account</a>
+        </div>
+
+        <p class="mt-4 text-center" style="color:var(--muted-2);font-size:.85rem; z-index:2">
+          Privacy and  <strong style="color:var(--accent-1)">Policy</strong>
+        </p>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* UI-only enhancements: reveal inputs and ensure blinking lights run purely in CSS */
+
+/* stagger reveal for inputs (no content change) */
+document.addEventListener('DOMContentLoaded', () => {
+  const inputs = Array.from(document.querySelectorAll('#loginForm .form-control, #loginForm input, #loginForm select, #loginForm textarea'));
+  inputs.forEach((el, i) => {
+    setTimeout(() => el.classList.add('visible'), 90 * i);
+  });
+
+  /* keyboard-friendly focus for first input */
+  if(inputs.length) inputs[0].focus();
+
+  /* small press feedback for login button */
+  const loginBtn = document.getElementById('loginBtn');
+  if(loginBtn){
+    loginBtn.addEventListener('mousedown', () => loginBtn.style.transform = 'translateY(1px) scale(.998)');
+    loginBtn.addEventListener('mouseup', () => loginBtn.style.transform = '');
+    loginBtn.addEventListener('mouseleave', () => loginBtn.style.transform = '');
+  }
+});
+</script>
+
+{% endblock %}
