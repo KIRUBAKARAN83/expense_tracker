@@ -10,7 +10,7 @@ from groq import Groq
 ALLOWED_CATEGORIES = [
     "Food","Groceries","Travel","Rent","Income","Utilities","Entertainment",
     "Healthcare","Shopping","Electronics","Stationery","Others","Assets",
-    "Losing","Prize Winning","Fitness","loan","EMI"
+    "Losing","Prize Winning","Fitness","loan","EMI","Sales",
 ]
 
 LLM_MODEL = os.getenv("GROQ_LLM_MODEL", "llama-3.1-8b-instant")
