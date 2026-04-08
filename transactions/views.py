@@ -55,7 +55,6 @@ GROQ_MODEL = "whisper-large-v3-turbo"
 VOICE_CHUNK_DIR = getattr(settings, "VOICE_CHUNK_DIR", os.path.join(tempfile.gettempdir(), "voice_chunks"))
 
 app_name = "transactions"
-import logging
 logger = logging.getLogger(__name__)
 
 
@@ -438,7 +437,6 @@ from django.contrib.auth.decorators import login_required
 from transactions.models import Transaction
 from .utils import parse_finance_text, normalize_amount
 
-import logging
 logger = logging.getLogger(__name__)
 
 # =========================================================
@@ -503,15 +501,29 @@ def add_transaction_voice(request):
         )
 
     # =====================================================
-    # 3️⃣ AI CATEGORY PREDICTION (SINGLE SOURCE OF TRUTH)
+    # 3️⃣ AI CATEGORY + AMOUNT via parse_transaction_text
+    # FIX: was calling predict_category() which skips the fixed amount
+    # extractor. Use parse_transaction_text() for consistency everywhere.
     # =====================================================
 
-    ai_result = predict_category(text)
+    from insights.transaction_parser import parse_transaction_text as _ptt
+    _ai = _ptt(text)
 
-    category = data.get("category") or ai_result["category"]
-    transaction_type = data.get("transaction_type") or ai_result["transaction_type"]
+    # Prefer caller-supplied category/type; fall back to AI result.
+    category         = data.get("category")         or _ai["category"]
+    transaction_type = data.get("transaction_type") or _ai["transaction_type"]
 
-    # =====================================================
+    # If the fixed parser found a better amount, use it.
+    if _ai.get("amount") is not None:
+        try:
+            _better = normalize_amount(_ai["amount"])
+            if _better > 0:
+                amount     = _better
+                amount_val = _ai["amount"]
+        except Exception:
+            pass
+
+    # 4️⃣ DATE HANDLING
     # 4️⃣ DATE HANDLING
     # =====================================================
 
@@ -570,26 +582,42 @@ def add_transaction_voice(request):
 
 
 
-VOICE_CHUNK_DIR = os.path.join(os.getcwd(), "voice_chunks")
+# FIX: removed rogue VOICE_CHUNK_DIR = os.path.join(os.getcwd(), ...)
+# The authoritative definition at module-top reads from Django settings
+# with a tempdir fallback. Redefining here with os.getcwd() silently
+# ignored that setting and broke chunk storage on production servers.
+# VOICE_CHUNK_DIR already defined at module level — do not redefine.
 
 
 # =========================================================
 # GROQ TRANSCRIPTION HELPER
 # =========================================================
-def _transcribe_with_groq(file_obj, lang="ta"):
+def _transcribe_with_groq(file_obj, lang=None):
     """
-    Send audio file to Groq transcription API.
+    Send audio file to Groq Whisper transcription API.
+
+    Supports Tamil ("ta"), English ("en"), or auto-detect (lang=None).
+    Whisper Large v3 handles Tamil-English code-switching well with auto-detect.
+    Always uses GROQ_TRANSCRIBE_URL and GROQ_MODEL from env, with safe fallbacks.
     """
-    url = os.getenv("GROQ_TRANSCRIBE_URL")
-    model = os.getenv("GROQ_MODEL", "whisper-large-v3")
-    api_key = os.getenv("GROQ_API_KEY")
+    url = os.getenv("GROQ_TRANSCRIBE_URL", GROQ_TRANSCRIBE_URL)
+    model = os.getenv("GROQ_MODEL", GROQ_MODEL)
+    api_key = os.getenv("GROQ_API_KEY", GROQ_API_KEY)
 
     if not url or not api_key:
-        raise RuntimeError("Groq API not configured")
+        raise RuntimeError("Groq API not configured: missing GROQ_TRANSCRIBE_URL or GROQ_API_KEY")
 
     headers = {"Authorization": f"Bearer {api_key}"}
-    files = {"file": (getattr(file_obj, "name", "audio.webm"), file_obj)}
-    data = {"model": model, "language": lang}
+    files = {"file": (getattr(file_obj, "name", "audio.webm"), file_obj, "audio/webm")}
+
+    # Build form data — omit language for auto-detect (handles Tamil + English mix)
+    data = {
+        "model": model,
+        "response_format": "verbose_json",   # returns detected language + confidence
+    }
+    if lang:
+        # Caller can force "ta" (Tamil) or "en" (English) to improve accuracy
+        data["language"] = lang
 
     resp = requests.post(url, headers=headers, files=files, data=data, timeout=60)
     resp.raise_for_status()
@@ -637,13 +665,17 @@ def add_transaction_voice_direct(request):
                 )
 
             text = (payload.get("text") or "").strip()
+            # JSON callers can pass "lang": "ta" / "en" / null
+            lang = payload.get("lang") or None
 
         else:
+            # Accept lang from form data: "ta" = Tamil, "en" = English, omit = auto-detect
+            lang = request.POST.get("lang") or None
             audio = request.FILES.get("audio")
 
             if audio:
                 try:
-                    groq_resp = _transcribe_with_groq(audio)
+                    groq_resp = _transcribe_with_groq(audio, lang=lang)
                     text = groq_resp.get("text") or groq_resp.get("transcript") or ""
                 except Exception as e:
                     return JsonResponse(
@@ -709,23 +741,28 @@ def add_transaction_voice_direct(request):
 
         ai_result = parse_transaction_text(text)
 
-        amount = ai_result["amount"]
-        category = ai_result["category"]
+        # FIX: ai_result["amount"] may be None — never blindly overwrite the
+        # already-validated `amount`.  Only upgrade when parser returns a value.
+        if ai_result.get("amount") is not None:
+            try:
+                amount = normalize_amount(ai_result["amount"])
+            except Exception:
+                pass  # keep previously validated amount
+
+        category         = ai_result["category"]
         transaction_type = ai_result["transaction_type"]
-        txn_date = ai_result["date"]
-        # =====================================================
+
+        # 5️⃣ DATE — use ai_result date; caller ISO date overrides it
         # 5️⃣ DATE HANDLING
         # =====================================================
 
-        txn_date_raw = payload.get("date") or parsed.get("date")
-
+        txn_date = ai_result["date"]  # safe default from parser
+        txn_date_raw = payload.get("date")  # caller override
         if txn_date_raw:
             try:
                 txn_date = date.fromisoformat(str(txn_date_raw))
             except Exception:
-                txn_date = date.today()
-        else:
-            txn_date = date.today()
+                pass  # keep ai_result date
 
         # =====================================================
         # 6️⃣ PREVIEW MODE
@@ -782,6 +819,8 @@ def add_transaction_voice_direct(request):
 def voice_chunk_upload(request):
 
     session_id = request.POST.get("session_id") or request.GET.get("session_id")
+    # Accept optional lang from frontend: "ta" = Tamil, "en" = English, None = auto-detect
+    lang = request.POST.get("lang") or request.GET.get("lang") or None
 
     if not session_id:
         return JsonResponse(
@@ -865,7 +904,7 @@ def voice_chunk_upload(request):
 
             try:
                 with open(assembled_path, "rb") as f:
-                    groq_resp = _transcribe_with_groq(f)
+                    groq_resp = _transcribe_with_groq(f, lang=lang)
             except Exception as e:
                 return JsonResponse(
                     {"status": "error", "message": "Transcription failed", "detail": str(e)},
@@ -881,11 +920,20 @@ def voice_chunk_upload(request):
                 )
 
             # =====================================================
-            # 4️⃣ PARSE AMOUNT
+            # 4️⃣ PARSE — single authoritative source
+            # parse_transaction_text handles amount + AI category in one call.
+            # Running parse_finance_text first then overwriting with ai_result
+            # caused "twenty lakhs" to produce ₹20 (double-parse bug).
             # =====================================================
 
-            parsed = parse_finance_text(text) or {}
-            amount_val = parsed.get("amount")
+            ai_result = parse_transaction_text(text)
+
+            # ai_result["amount"] can still be None if the text is ambiguous;
+            # fall back to the lightweight util rather than crashing at DB insert.
+            amount_val = ai_result.get("amount")
+            if amount_val is None:
+                _fb = parse_finance_text(text) or {}
+                amount_val = _fb.get("amount")
 
             if amount_val is None:
                 return JsonResponse(
@@ -907,32 +955,15 @@ def voice_chunk_upload(request):
                     status=400,
                 )
 
-            # =====================================================
-            # 5️⃣ AI CATEGORY (SINGLE SOURCE)
-            # =====================================================
-
-            ai_result = parse_transaction_text(text)
-
-            amount = ai_result["amount"]
             predicted_category = ai_result["category"]
-            predicted_type = ai_result["transaction_type"]
-            txn_date = ai_result["date"]
+            predicted_type     = ai_result["transaction_type"]
 
-            # =====================================================
-            # 6️⃣ DATE HANDLING
+            # 5️⃣ DATE — ai_result already provides a safe default
             # =====================================================
 
-            txn_date_raw = parsed.get("date")
+            txn_date = ai_result["date"]  # parse_transaction_text handles keywords
 
-            if txn_date_raw:
-                try:
-                    txn_date = date.fromisoformat(str(txn_date_raw))
-                except Exception:
-                    txn_date = date.today()
-            else:
-                txn_date = date.today()
-
-            # =====================================================
+            # 6️⃣ CREATE TRANSACTION
             # 7️⃣ CREATE TRANSACTION
             # =====================================================
 
